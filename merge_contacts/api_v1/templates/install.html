@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+
+{% load static %}
+
+<html lang="en">
+    <head>
+    	{% load static %}
+		<script src="//api.bitrix24.com/api/v1/"></script>
+	</head>
+	<body>
+		<p>INSTALL.html</p>
+		<!--		<script src="{% static 'scripts/install/script.js' %}"></script>-->
+		<script>
+			let domen = "{{domain}}";
+			let URL__CREATE_DEAL = `${domen}/merge_contacts/api/v1/create-deal/`;
+			let URL__UPDATE_DEAL = `${domen}/merge_contacts/api/v1/create-deal/`;
+			console.log('URL__CREATE_DEAL = ', URL__CREATE_DEAL);
+			console.log('URL__UPDATE_DEAL = ', URL__UPDATE_DEAL);
+
+			async function callMethod(method, params = {}) {
+				return new Promise((resolve, reject) => {
+					let callback = result => {
+						if (result.status != 200 || result.error()) {
+							console.log(`${result.error()} (callMethod ${method}: ${JSON.stringify(params)})`);
+							return reject("");
+						}
+						return resolve(result.data());
+					};
+					BX24.callMethod(method, params, callback);
+				});
+			}
+
+			async function addHandler() {
+				await callMethod(
+					'event.bind',
+					{
+						"event": "ONCRMDEALADD",
+						"handler": URL__CREATE_DEAL,
+					},
+					console.log('Обработчик ONCRMDEALADD установлен')
+				)
+				await callMethod(
+					'event.bind',
+					{
+						"event": "ONCRMDEALUPDATE",
+						"handler": URL__UPDATE_DEAL,
+					},
+					console.log('Обработчик ONCRMDEALUPDATE установлен')
+				)
+			}
+
+			async function removeHandler() {
+				await callMethod(
+					'event.unbind',
+					{
+						"event": "ONCRMDEALADD",
+						"handler": URL__CREATE_DEAL,
+					},
+					console.log('Обработчик ONCRMDEALADD удален')
+				)
+				await callMethod(
+					'event.unbind',
+					{
+						"event": "ONCRMDEALUPDATE",
+						"handler": URL__UPDATE_DEAL,
+					},
+					console.log('Обработчик ONCRMDEALUPDATE удален')
+				)
+			}
+
+			BX24.init(async function(){
+				await removeHandler();
+				await addHandler();
+
+				BX24.installFinish();
+			});
+		</script>
+	</body>
+</html>
